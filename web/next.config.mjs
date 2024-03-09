@@ -12,14 +12,7 @@ export default (phase, { defaultConfig }) => {
     };
   } else {
     return {
-      async rewrites() {
-        return [
-          {
-            source: "/query",
-            destination: "http://localhost:8080/query" // Proxy to Backend
-          }
-        ];
-      }
+
     };
   }
 }
