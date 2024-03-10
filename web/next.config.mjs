@@ -5,10 +5,10 @@ export default (phase, { defaultConfig }) => {
    */
   if (env === "production") {
     return {
-      output: "export",
-      assetPrefix: "/ui/",
-      basePath: "/ui",
-      distDir: "../ui"
+      // output: "export",
+      // assetPrefix: "/ui/",
+      // basePath: "/ui",
+      // distDir: "../ui"
     };
   } else {
     return {
