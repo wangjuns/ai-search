@@ -52,24 +52,12 @@ export async function POST(request: Request) {
         { "role": "user", "content": query },
     ]
 
-    // 创建一个可读流
-    // const readableStream = new Readable({
-    //     read() {
-    //         this.push("__LLM_RESPONSE__")
-    //         this.push("Hello, ");
-    //         this.push("world!");
-    //         this.push(null); // 表示流的结束
-    //     }
-    // });
+    //创建一个可读流
 
-    // // 创建一个新的Response对象
-    // const response = new Response(readableStream, {
-    //     headers: { 'Content-Type': 'text/plain' }
-    // });
 
-    // return Promise.resolve(response);
+
     // Ask Azure OpenAI for a streaming chat completion given the prompt
-    const response = await client.streamChatCompletions(
+    const events = await client.streamChatCompletions(
         process.env.AZURE_OPENAI_DEPLOYMENT_ID,
         messages,
         {
@@ -79,19 +67,28 @@ export async function POST(request: Request) {
         }
     );
 
-    // Convert the response into a friendly text-stream
-    const stream = OpenAIStream(response);
-    const prefixText = "\n\n__LLM_RESPONSE__\n\n";
+    const passThroughStream = new PassThrough();
 
-    // Create a new PassThrough stream
-    const newStream = new PassThrough();
+    passThroughStream.write(JSON.stringify(context.map((c, i) => { return { id: i, url: c.link, name: c.title } })));
+    passThroughStream.write("\n\n__LLM_RESPONSE__\n\n");
 
-    // Write your text and the original stream's data to the new stream
-    newStream.write(JSON.stringify(context.map((c, i) => { return { id: i, url: c.link, name: c.title } })))
-    newStream.write(prefixText);
-    // stream.pipeTo(newStream);
-    // Use pipeline to handle the stream
-    await pipelineAsync(stream, newStream);
-    // Respond with the stream
-    return Promise.resolve(new StreamingTextResponse(newStream));
+    // 创建一个新的Response对象
+    const response = new Response(passThroughStream, {
+        headers: { 'Content-Type': 'text/plain' }
+    });
+
+    // Read events 
+    (async function () {
+        for await (const event of events) {
+            for (const choice of event.choices) {
+                const delta = choice.delta?.content;
+                if (delta !== undefined) {
+                    passThroughStream.write(delta);
+                }
+            }
+        }
+        passThroughStream.end();
+    })();
+
+    return Promise.resolve(response);
 }
