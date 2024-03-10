@@ -1,11 +1,19 @@
-"use client";
 import { Footer } from "@/app/components/footer";
 import { Logo } from "@/app/components/logo";
 import { PresetQuery } from "@/app/components/preset-query";
 import { Search } from "@/app/components/search";
 import React from "react";
+import { auth } from "./auth";
+import { notFound, redirect } from 'next/navigation'
 
-export default function Home() {
+
+export default async function Home() {
+  const session = await auth()
+
+  if (!session?.user) {
+    redirect(`/api/auth/signin`)
+  }
+
   return (
     <div className="absolute inset-0 min-h-[500px] flex items-center justify-center">
       <div className="relative flex flex-col gap-8 px-4 -mt-24">
