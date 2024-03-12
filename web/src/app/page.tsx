@@ -4,7 +4,7 @@ import { PresetQuery } from "@/app/components/preset-query";
 import { Search } from "@/app/components/search";
 import React from "react";
 import { auth } from "./auth";
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { UserMenu } from "./components/user-menu";
 
 

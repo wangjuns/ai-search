@@ -1,10 +1,7 @@
 import { google_search } from "@/app/google";
-import { Readable, PassThrough, pipeline } from "stream";
-import { OpenAIClient, AzureKeyCredential } from '@azure/openai';
-import { OpenAIStream, StreamingTextResponse } from 'ai';
-import { promisify } from "util";
-
-const pipelineAsync = promisify(pipeline);
+import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
+import { StreamingTextResponse } from 'ai';
+import { TextEncoder } from "util";
 
 const client = new OpenAIClient(
     process.env.AZURE_OPENAI_ENDPOINT!,
@@ -52,9 +49,6 @@ export async function POST(request: Request) {
         { "role": "user", "content": query },
     ]
 
-    //创建一个可读流
-
-
 
     // Ask Azure OpenAI for a streaming chat completion given the prompt
     const events = await client.streamChatCompletions(
@@ -68,29 +62,33 @@ export async function POST(request: Request) {
         }
     );
 
-    const passThroughStream = new PassThrough();
+    const encoder = new TextEncoder()
 
-    passThroughStream.write(JSON.stringify(context.map((c, i) => { return { id: i, url: c.link, name: c.title } })));
-    passThroughStream.write("\n\n__LLM_RESPONSE__\n\n");
+    const outputStream = new ReadableStream({
 
-    // 创建一个新的Response对象
-    //@ts-expect-error fix later
-    const response = new Response(passThroughStream, {
-        headers: { 'Content-Type': 'text/plain' }
-    });
-
-    // Read events 
-    (async function () {
-        for await (const event of events) {
-            for (const choice of event.choices) {
-                const delta = choice.delta?.content;
-                if (delta !== undefined) {
-                    passThroughStream.write(delta);
+        start(controller) {
+            const references = JSON.stringify(context.map((c, i) => { return { id: i, url: c.link, name: c.title } }))
+            controller.enqueue(encoder.encode(references)); // 可以在此处初始化资源，例如打开文件句柄
+            controller.enqueue(encoder.encode("\n\n__LLM_RESPONSE__\n\n"))
+        },
+        async pull(controller) {
+            for await (const event of events) {
+                for (const choice of event.choices) {
+                    const delta = choice.delta?.content;
+                    if (delta) {
+                        controller.enqueue(encoder.encode(delta));
+                    }
                 }
             }
+            controller.close();
+        },
+        cancel() {
+            // 当消费者取消流时调用 (例如调用了reader.cancel())
+            console.log('Stream cancelled by the consumer.');
+            // 这里可以执行一些清理工作
         }
-        passThroughStream.end();
-    })();
+    });
 
-    return Promise.resolve(response);
+
+    return new StreamingTextResponse(outputStream)
 }
