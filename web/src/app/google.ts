@@ -1,6 +1,15 @@
 
 const SEARCH_ENDPOINT = "https://www.googleapis.com/customsearch/v1";
-const REFERENCE_COUNT = 8;
+const REFERENCE_COUNT = '8';
+
+
+interface SearchItem {
+    title: string,
+    link: string,
+    snippet: string,
+    htmlSnippet: string,
+    cacheId: string
+}
 
 /*
 google search result item schema:
@@ -20,10 +29,10 @@ google search result item schema:
   },
 */
 
-export async function google_search(query: string) {
+export async function google_search(query: string): Promise<SearchItem[]> {
     const params = {
-        "key": process.env.CUSTOM_SEARCH_API_KEY,
-        "cx": process.env.CUSTOM_SEARCH_CX,
+        "key": process.env.CUSTOM_SEARCH_API_KEY!,
+        "cx": process.env.CUSTOM_SEARCH_CX!,
         "q": query,
         "num": REFERENCE_COUNT,
     }

@@ -15,7 +15,7 @@ import {
 import { IconExternalLink } from '@/components/ui/icons'
 
 export interface UserMenuProps {
-  user: Session['user']
+  user: Session['user'] | undefined
 }
 
 function getUserInitials(name: string) {

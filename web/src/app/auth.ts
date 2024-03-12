@@ -1,15 +1,14 @@
 import NextAuth, { type DefaultSession, User } from 'next-auth'
 import CredentialsProvider from "next-auth/providers/credentials";
-import { User } from 'next-auth';
 
 declare module 'next-auth' {
-  interface User extends User {
+  export interface User {
     pwd?: string
   }
 }
 
 
-const users: User[] = JSON.parse(process.env.USERS)
+const users: User[] = JSON.parse(process.env.USERS!)
 
 declare module 'next-auth' {
   interface Session {

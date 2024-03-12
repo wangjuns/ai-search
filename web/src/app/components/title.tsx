@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { UserMenu } from "./user-menu";
 import { getSession } from "next-auth/react"
 import { useState, useEffect } from "react";
+import { User } from "next-auth";
 
 
 export const Title = ({ query }: { query: string }) => {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | undefined>(undefined);
 
   useEffect(() => {
     const fetchSession = async () => {
