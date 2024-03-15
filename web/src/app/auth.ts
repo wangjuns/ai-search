@@ -8,7 +8,15 @@ declare module 'next-auth' {
 }
 
 
-const users: User[] = JSON.parse(process.env.USERS!)
+const init = {
+  _users: null as User[] | null,
+  get users(): User[] {
+    if (!this._users) {
+      this._users = JSON.parse(process.env.USERS!);
+    }
+    return this._users!;
+  }
+}
 
 declare module 'next-auth' {
   interface Session {
@@ -40,7 +48,7 @@ export const {
       },
       async authorize(credentials, req) {
         // Add logic here to look up the user from the credentials supplied
-        const user = users.find(user => user.name === credentials?.username);
+        const user = init.users.find(user => user.name === credentials?.username);
         if (user && user.pwd == credentials?.password) {
           return user;
         } else {

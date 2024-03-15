@@ -9,6 +9,7 @@ export default (phase, { defaultConfig }) => {
       // assetPrefix: "/ui/",
       // basePath: "/ui",
       // distDir: "../ui"
+      output: "standalone"
     };
   } else {
     return {

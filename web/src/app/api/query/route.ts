@@ -3,10 +3,21 @@ import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
 import { StreamingTextResponse } from 'ai';
 import { TextEncoder } from "util";
 
-const client = new OpenAIClient(
-    process.env.AZURE_OPENAI_ENDPOINT!,
-    new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY!),
-);
+export const dynamic = 'force-dynamic'
+
+
+let client: OpenAIClient;
+
+function getClient(): OpenAIClient {
+    if (!client) {
+        client = new OpenAIClient(
+            process.env.AZURE_OPENAI_ENDPOINT!,
+            new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY!),
+        );
+    }
+    return client;
+}
+
 
 const stop = [
     "<|im_end|>",
@@ -51,7 +62,7 @@ export async function POST(request: Request) {
 
 
     // Ask Azure OpenAI for a streaming chat completion given the prompt
-    const events = await client.streamChatCompletions(
+    const events = await getClient().streamChatCompletions(
         process.env.AZURE_OPENAI_DEPLOYMENT_ID!,
         //@ts-expect-error ignore type check
         messages,
