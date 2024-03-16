@@ -1,11 +1,9 @@
 "use client";
-import { getSearchUrl } from "@/app/utils/get-search-url";
 import { ArrowRight } from "lucide-react";
-import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
-import React, { FC, useState } from "react";
+import { FC, FormEvent, useState } from "react";
 
-export const Search: FC = () => {
+export const Search: FC<{ onSubmit: (e: FormEvent<HTMLFormElement>, value: string) => void }> = ({ onSubmit }) => {
   const [value, setValue] = useState("");
   const router = useRouter();
   return (
@@ -14,7 +12,7 @@ export const Search: FC = () => {
         e.preventDefault();
         if (value) {
           setValue("");
-          router.push(getSearchUrl(encodeURIComponent(value), nanoid()));
+          onSubmit(e, value)
         }
       }}
     >
@@ -37,6 +35,6 @@ export const Search: FC = () => {
           <ArrowRight size={16} />
         </button>
       </label>
-    </form>
+    </form >
   );
 };

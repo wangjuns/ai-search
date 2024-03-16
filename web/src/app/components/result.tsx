@@ -7,8 +7,16 @@ import { Source } from "@/app/interfaces/source";
 import { parseStreaming } from "@/app/utils/parse-streaming";
 import { Annoyed } from "lucide-react";
 import { FC, useEffect, useState } from "react";
+import SearchResult from "../interfaces/ai-search-result";
+import { Message } from "../interfaces/message";
+import { Query } from "./query";
 
-export const Result: FC<{ query: string; rid: string }> = ({ query, rid }) => {
+export const Result: FC<{
+  query: string;
+  rid: string;
+  messages: Message[],
+  append: (newResult: SearchResult) => void;
+}> = ({ query, rid, messages, append }) => {
   const [sources, setSources] = useState<Source[]>([]);
   const [markdown, setMarkdown] = useState<string>("");
   const [relates, setRelates] = useState<Relate[] | null>(null);
@@ -18,10 +26,19 @@ export const Result: FC<{ query: string; rid: string }> = ({ query, rid }) => {
     void parseStreaming(
       controller,
       query,
+      messages,
       rid,
       setSources,
       setMarkdown,
       setRelates,
+      (_answer, _sources, _relates) => {
+        append({
+          query: query,
+          answer: _answer,
+          sources: _sources,
+          relates: _relates,
+        })
+      },
       setError,
     );
     return () => {
@@ -30,6 +47,7 @@ export const Result: FC<{ query: string; rid: string }> = ({ query, rid }) => {
   }, [query]);
   return (
     <div className="flex flex-col gap-8">
+      <Query markdown={query}></Query>
       <Answer markdown={markdown} sources={sources}></Answer>
       <Sources sources={sources}></Sources>
       <Relates relates={relates}></Relates>

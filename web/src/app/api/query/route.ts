@@ -1,22 +1,12 @@
 import { google_search } from "@/app/google";
-import { AzureKeyCredential, OpenAIClient } from '@azure/openai';
+import { Message } from "@/app/interfaces/message";
+import getClient from "@/app/lib/client";
+import { logger } from "@/app/lib/logger";
+import searchRewrite from "@/app/lib/search-rewrite";
 import { StreamingTextResponse } from 'ai';
 import { TextEncoder } from "util";
-
 export const dynamic = 'force-dynamic'
 
-
-let client: OpenAIClient;
-
-function getClient(): OpenAIClient {
-    if (!client) {
-        client = new OpenAIClient(
-            process.env.AZURE_OPENAI_ENDPOINT!,
-            new AzureKeyCredential(process.env.AZURE_OPENAI_API_KEY!),
-        );
-    }
-    return client;
-}
 
 
 const stop = [
@@ -30,7 +20,7 @@ const stop = [
 
 
 const rag_query_text = `
-You are a large language AI assistant built by Lepton AI.You are given a user question, and please write clean, concise and accurate answer to the question.You will be given a set of related contexts to the question, each starting with a reference number like[[citation: x]], where x is a number.Please use the context and cite the context at the end of each sentence if applicable.
+You are a large language AI assistant.You are given a user question, and please write clean, concise and accurate answer to the question.You will be given a set of related contexts to the question, each starting with a reference number like[[citation: x]], where x is a number.Please use the context and cite the context at the end of each sentence if applicable.
 
 Your answer must be correct, accurate and written by an expert using an unbiased and professional tone.Please limit to 1024 tokens.Do not give any information that is not related to the question, and do not repeat.Say "information is missing on" followed by the related topic, if the given context do not provide sufficient information.
 
@@ -43,11 +33,22 @@ Here are the set of contexts:
 Remember, don't blindly repeat the contexts verbatim. And here is the user question:
 `;
 
+interface PostData {
+    messages: Message[],
+    search_uuid: string,
+    query: string,
+}
+
 
 export async function POST(request: Request) {
 
-    const { query, search_uuid } = await request.json();
-    const context = await google_search(query)
+    const { messages: pre_messages, query, search_uuid }: PostData = await request.json();
+
+    const search_query = await searchRewrite(query, pre_messages)
+
+    logger.debug("rewrite query: ", search_query)
+
+    const context = await google_search(search_query)
     // console.log(context)
 
     const context_text = context.map((c, i) => `[[citation:${i + 1}]] ${c['snippet']}`).join("\n\n");
@@ -55,11 +56,14 @@ export async function POST(request: Request) {
 
     // console.log(system_prompt);
 
-    const messages = [
-        { "role": "system", "content": system_prompt },
-        { "role": "user", "content": query },
-    ]
+    let messages = [{ "role": "system", "content": system_prompt }];
 
+    if (pre_messages) {
+        messages = messages.concat(pre_messages);
+    }
+
+    messages.push({ "role": "user", "content": query });
+    logger.debug("qa prompt: ", messages)
 
     // Ask Azure OpenAI for a streaming chat completion given the prompt
     const events = await getClient().streamChatCompletions(
@@ -95,7 +99,7 @@ export async function POST(request: Request) {
         },
         cancel() {
             // 当消费者取消流时调用 (例如调用了reader.cancel())
-            console.log('Stream cancelled by the consumer.');
+            logger.warn('Stream cancelled by the consumer.');
             // 这里可以执行一些清理工作
         }
     });
