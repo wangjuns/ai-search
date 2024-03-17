@@ -6,7 +6,7 @@ import { Relate } from "@/app/interfaces/relate";
 import { Source } from "@/app/interfaces/source";
 import { parseStreaming } from "@/app/utils/parse-streaming";
 import { Annoyed } from "lucide-react";
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import SearchResult from "../interfaces/ai-search-result";
 import { Message } from "../interfaces/message";
 import { Query } from "./query";
@@ -45,10 +45,20 @@ export const Result: FC<{
       controller.abort();
     };
   }, [query]);
+
+  const endRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [markdown]);
+
   return (
     <div className="flex flex-col gap-8">
       <Query markdown={query}></Query>
       <Answer markdown={markdown} sources={sources}></Answer>
+      <div ref={endRef}></div>
       <Sources sources={sources}></Sources>
       <Relates relates={relates}></Relates>
       {error && (
