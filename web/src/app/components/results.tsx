@@ -30,6 +30,7 @@ export const Results: FC<{
 
       {
         query && (<Result
+          key={query}
           query={query}
           rid={nanoid()}
           messages={messages}
