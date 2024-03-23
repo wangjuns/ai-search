@@ -4,29 +4,17 @@ import { Footer } from "@/app/components/footer";
 import { Logo } from "@/app/components/logo";
 import { PresetQuery } from "@/app/components/preset-query";
 import { Search } from "@/app/components/search";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useRouter } from 'next/navigation'
 import { UserMenu } from "./components/user-menu";
 import { getSearchUrl } from "./utils/get-search-url";
 import { nanoid } from "nanoid";
-import { getSession } from "next-auth/react";
+import { useSession } from "next-auth/react"
 
 
 export default function Home() {
-
-  const [user, setUser] = useState()
   const router = useRouter()
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const session = await getSession()
-
-      if (!session?.user) {
-        router.push(`/api/auth/signin`)
-      }
-    };
-    checkAuth();
-  })
+  const { data: session, status } = useSession()
 
   return (
 
@@ -34,7 +22,7 @@ export default function Home() {
 
       <div className="relative flex flex-col gap-8 px-4 -mt-24">
         <UserMenu
-          user={user}
+          user={session?.user}
         />
         <Logo></Logo>
         <Search onSubmit={(e, value) => {
